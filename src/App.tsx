@@ -29,7 +29,8 @@ function App() {
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'Análise de Compras', sources: [] },
     { id: '2', name: 'Auditoria de NFs', sources: [] },
-    { id: '3', name: 'Visão Geral do Mercado', sources: [] }
+    { id: '3', name: 'Avaliação de Cotação', sources: ['ks-hist'] },
+    { id: '4', name: 'Visão Geral do Mercado', sources: [] }
   ]);
   const [activeSkillId, setActiveSkillId] = useState('1');
   const activeSkill = skills.find(s => s.id === activeSkillId)?.name || 'Nova Skill';
@@ -49,6 +50,14 @@ function App() {
       status: 'ready', 
       fileCount: 156,
       lastSync: 'Hoje, 10:30'
+    },
+    { 
+      id: 'ks-hist', 
+      name: 'Histórico de Preços (Drive)', 
+      link: 'https://drive.google.com/drive/folders/hist-link', 
+      status: 'ready', 
+      fileCount: 24,
+      lastSync: 'Ontem, 16:45'
     }
   ]);
 
@@ -166,11 +175,27 @@ function App() {
       let aiContent = `Certo. Iniciei a análise com a skill "${activeSkill}". Por favor, anexe os documentos necessários para que eu cruze os dados.`;
       
       const lowerInput = inputValue.toLowerCase();
+      const needsAnalysis = lowerInput.includes('analis') || lowerInput.includes('oc') || lowerInput.includes('cotaç') || lowerInput.includes('estudo') || lowerInput.includes('preço');
       const needsFolderList = lowerInput.includes('dentro') || lowerInput.includes('arquivos') || lowerInput.includes('conteúdo') || lowerInput.includes('pasta');
       
       const currentSkill = skills.find(s => s.id === activeSkillId);
       
-      if (needsFolderList && currentSkill && currentSkill.sources && currentSkill.sources.length > 0) {
+      if (activeSkillId === '3' && needsAnalysis) {
+        aiContent = `Analisando a sua solicitação com base no **Histórico de Preços em tempo real...** 📊
+
+Encontrei o item **"Resina Poliéster Industrial"** no seu histórico. Aqui está a comparação:
+
+| Mês/Ano | Fornecedor | Preço (kg) | Variação |
+| :--- | :--- | :--- | :--- |
+| **Atual (OC)** | **Química Sul** | **R$ 12,40** | **+5.2%** ⚠️ |
+| Jan/2026 | Química Sul | R$ 11,80 | - |
+| Dez/2025 | Master Polímeros | R$ 11,75 | - |
+| Nov/2025 | Química Sul | R$ 11,90 | - |
+
+**Análise:** O preço atual está **5.2% acima** da média do último trimestre. O fornecedor Master Polímeros ofereceu o melhor preço histórico (R$ 11,75). 
+
+Deseja que eu gere um gráfico de evolução ou que eu sugira uma contraproposta para o comprador?`;
+      } else if (needsFolderList && currentSkill && currentSkill.sources && currentSkill.sources.length > 0) {
         // Encontrar os nomes das fontes vinculadas
         const linkedSources = knowledgeSources.filter(ks => currentSkill.sources.includes(ks.id));
         
@@ -286,6 +311,20 @@ function App() {
                       <div className="source-icon drive-icon popover-icon"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg></div>
                       Adicionar de Google Drive
                     </li>
+                    <div className="popover-divider"></div>
+                    <div className="popover-label" style={{ padding: '0.4rem 0.75rem', fontSize: '0.7rem', color: '#8e8e8e', textTransform: 'uppercase', fontWeight: 600 }}>Suas Fontes Conectadas</div>
+                    {knowledgeSources.map(source => (
+                      <li key={source.id} className="popover-item" onClick={() => {
+                        setInputValue(prev => prev + `[Analisando contexto de: ${source.name}] `);
+                        setIsAttachMenuOpen(false);
+                      }}>
+                        <div className="source-icon drive-icon popover-icon" style={{ backgroundColor: '#4285f4' }}>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        {source.name}
+                      </li>
+                    ))}
+                    <div className="popover-divider"></div>
                     <li className="popover-item has-submenu">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                       Arquivos recentes

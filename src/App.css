@@ -225,6 +225,41 @@
   background-color: #212121;
 }
 
+.active-dot {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 8px var(--accent-primary);
+}
+
+.skill-config-card {
+  margin: 0.5rem 0.75rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 8px;
+}
+
+.text-highlight {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+.add-source-btn:hover .text-highlight {
+  color: var(--accent-secondary);
+}
+
 /* User Profile ChatGPT Style */
 .user-profile-bottom {
   padding: 0.5rem;

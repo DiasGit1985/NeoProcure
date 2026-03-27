@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface SidebarProps {
-  skills: { id: string, name: string }[];
+  skills: { id: string, name: string, sources: string[] }[];
   activeSkillId: string;
   setActiveSkillId: (id: string) => void;
   setIsDriveAuthOpen: (open: boolean) => void;
@@ -107,11 +107,29 @@ const Sidebar: React.FC<SidebarProps> = ({
               key={skill.id}
               className={`chat-item ${activeSkillId === skill.id ? 'active' : ''}`}
               onClick={() => setActiveSkillId(skill.id)}
-              style={{ backgroundColor: activeSkillId === skill.id ? '#212121' : 'transparent' }}
+              style={{ backgroundColor: activeSkillId === skill.id ? '#212121' : 'transparent', position: 'relative' }}
             >
-              {skill.name}
+              <span className="truncate" style={{ flex: 1 }}>{skill.name}</span>
+              {activeSkillId === skill.id && (
+                <div className="active-dot glow-effect" title="Skill Ativa"></div>
+              )}
             </div>
           ))}
+        </div>
+
+        {/* New Section: Skill Intelligence / Context */}
+        <div className="sidebar-section-title">Inteligência da Skill</div>
+        <div className="skill-config-card glass-panel">
+          <p style={{ fontSize: '0.75rem', color: '#9b9b9b', marginBottom: '8px' }}>
+            Contexto: {skills.find(s => s.id === activeSkillId)?.sources.length || 0} fonte(s) conectada(s)
+          </p>
+          <button 
+            className="btn-secondary btn-sm" 
+            style={{ width: '100%', fontSize: '0.7rem' }}
+            onClick={() => setIsAddSourceModalOpen(true)}
+          >
+            Treinar com nova fonte
+          </button>
         </div>
       </div>
 
