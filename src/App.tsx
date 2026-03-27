@@ -55,18 +55,31 @@ function NeoProcureApp() {
 
   const fetchDriveFolders = async (token: string) => {
     setIsLoadingFolders(true);
+    console.log("Iniciando busca no Drive com token:", token.substring(0, 10) + "...");
     try {
-      const response = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder'&fields=files(id, name)", {
+      // Query mais abrangente: busca pastas não excluídas, incluindo as compartilhadas
+      const query = encodeURIComponent("mimeType='application/vnd.google-apps.folder' and trashed=false");
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id, name, owners)&pageSize=50`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       const data = await response.json();
+      console.log("Resposta bruta da API do Drive:", data);
+      
+      if (data.error) {
+        console.error("Erro retornado pela API:", data.error);
+        alert(`Erro do Google: ${data.error.message}`);
+      }
+
       if (data.files) {
         setRealFolders(data.files);
+        console.log(`${data.files.length} pastas encontradas.`);
+      } else {
+        setRealFolders([]);
       }
     } catch (error) {
-      console.error("Erro ao buscar pastas do Drive:", error);
+      console.error("Erro crítico ao buscar pastas do Drive:", error);
     } finally {
       setIsLoadingFolders(false);
     }
