@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import './index.css';
 import './App.css';
 import Layout from './components/Layout';
@@ -25,7 +26,52 @@ interface KnowledgeSource {
   lastSync: string;
 }
 
+const GOOGLE_CLIENT_ID = "811466367845-ooi3ehr18d098v1c9rbka2lc6thi0hk6.apps.googleusercontent.com";
+
 function App() {
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <NeoProcureApp />
+    </GoogleOAuthProvider>
+  );
+}
+
+function NeoProcureApp() {
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [realFolders, setRealFolders] = useState<{id: string, name: string}[]>([]);
+  const [isLoadingFolders, setIsLoadingFolders] = useState(false);
+
+  const login = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      console.log('Login Success:', tokenResponse);
+      setAccessToken(tokenResponse.access_token);
+      setIsDriveAuthOpen(false);
+      setIsDriveModalOpen(true);
+      fetchDriveFolders(tokenResponse.access_token);
+    },
+    onError: () => console.log('Login Failed'),
+    scope: 'https://www.googleapis.com/auth/drive.readonly',
+  });
+
+  const fetchDriveFolders = async (token: string) => {
+    setIsLoadingFolders(true);
+    try {
+      const response = await fetch("https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder'&fields=files(id, name)", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      if (data.files) {
+        setRealFolders(data.files);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar pastas do Drive:", error);
+    } finally {
+      setIsLoadingFolders(false);
+    }
+  };
+
   const [skills, setSkills] = useState<Skill[]>([
     { id: '1', name: 'Análise de Compras', sources: [] },
     { id: '2', name: 'Auditoria de NFs', sources: [] },
@@ -406,16 +452,18 @@ Deseja que eu gere um gráfico de evolução ou que eu sugira uma contraproposta
             <p className="auth-subtitle">para continuar no <strong>NeoProcure AI</strong></p>
             
             <div className="auth-account-selector">
-              <div className="account-item" onClick={() => {
-                setIsDriveAuthOpen(false);
-                setIsDriveModalOpen(true);
-              }}>
-                <div className="avatar-sm">AD</div>
-                <div className="account-info">
-                  <span className="account-name">Administrador Neo</span>
-                  <span className="account-email">admin@neoprocure.ai</span>
-                </div>
-              </div>
+              <button 
+                className="btn btn-primary" 
+                style={{ width: '100%', borderRadius: '8px', padding: '12px' }}
+                onClick={() => {
+                  login();
+                }}
+              >
+                <svg style={{ marginRight: '8px' }} width="18" height="18" viewBox="0 0 24 24" fill="white">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                </svg>
+                Entrar com Google (Real)
+              </button>
             </div>
             
             <div className="auth-footer-text">
@@ -451,24 +499,30 @@ Deseja que eu gere um gráfico de evolução ou que eu sugira uma contraproposta
                 </div>
                 
                 <ul className="folder-list">
-                  {driveFolders.map((folder) => (
-                    <li 
-                      key={folder.id} 
-                      className={`folder-item ${selectedFolders.includes(folder.id) ? 'selected' : ''}`}
-                      onClick={() => handleToggleFolder(folder.id)}
-                    >
-                      <div className="folder-checkbox">
-                        {selectedFolders.includes(folder.id) && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        )}
-                      </div>
-                      <svg className="folder-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                      <div className="folder-info">
-                        <span className="folder-name">{folder.name}</span>
-                        <span className="folder-meta">{folder.items} arquivos</span>
-                      </div>
-                    </li>
-                  ))}
+                  {isLoadingFolders ? (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#a0a0ab' }}>Buscando suas pastas...</div>
+                  ) : realFolders.length > 0 ? (
+                    realFolders.map((folder) => (
+                      <li 
+                        key={folder.id} 
+                        className={`folder-item ${selectedFolders.includes(folder.id) ? 'selected' : ''}`}
+                        onClick={() => handleToggleFolder(folder.id)}
+                      >
+                        <div className="folder-checkbox">
+                          {selectedFolders.includes(folder.id) && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          )}
+                        </div>
+                        <svg className="folder-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        <div className="folder-info">
+                          <span className="folder-name">{folder.name}</span>
+                          <span className="folder-meta">ID: {folder.id.substring(0, 8)}...</span>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: '#a0a0ab' }}>Nenhuma pasta encontrada.</div>
+                  )}
                 </ul>
               </div>
             </div>
